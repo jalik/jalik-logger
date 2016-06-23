@@ -33,7 +33,7 @@ Logger = {
      * Logs a debug message
      * @param message
      * @param context
-     * @return {*|any}
+     * @return {*}
      */
     debug: function (message, context) {
         return this.log(message, Logger.DEBUG, context);
@@ -43,7 +43,7 @@ Logger = {
      * Logs an error
      * @param message
      * @param err
-     * @return {*|any}
+     * @return {*}
      */
     error: function (message, err) {
         if (message) {
@@ -62,7 +62,7 @@ Logger = {
      * Logs an information
      * @param message
      * @param context
-     * @return {*|any}
+     * @return {*}
      */
     info: function (message, context) {
         return this.log(message, Logger.INFO, context);
@@ -77,7 +77,7 @@ Logger = {
      */
     log: function (message, type, context) {
         check(message, String);
-        check(type, String);
+        //check(type, String);
 
         var config = this.config;
 
@@ -104,7 +104,7 @@ Logger = {
             }
         }
 
-        if (Meteor.isServer && config.save === true || config.save[type] === true) {
+        if (config.save === true || config.save[type] === true) {
             return Logger.logs.insert({
                 createdAt: new Date(),
                 message: message,
@@ -118,7 +118,7 @@ Logger = {
      * Logs a warning
      * @param message
      * @param context
-     * @return {*|any}
+     * @return {*}
      */
     warn: function (message, context) {
         return this.log(message, Logger.WARNING, context);

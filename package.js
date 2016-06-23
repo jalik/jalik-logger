@@ -1,6 +1,6 @@
 Package.describe({
     name: 'jalik:logger',
-    version: '0.1.0',
+    version: '0.1.1',
     author: 'karl.stein.pro@gmail.com',
     summary: 'Logger utility',
     homepage: 'https://github.com/jalik/jalik-logger',

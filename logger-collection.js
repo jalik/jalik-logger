@@ -22,21 +22,12 @@
  * SOFTWARE.
  */
 
-Package.describe({
-    name: "jalik:logger",
-    version: "0.2.0",
-    author: "karl.stein.pro@gmail.com",
-    summary: "Logger utility for Meteor",
-    homepage: "https://github.com/jalik/jalik-logger",
-    git: "https://github.com/jalik/jalik-logger.git",
-    documentation: "README.md"
-});
+import {Mongo} from 'meteor/mongo';
 
-Package.onUse(function (api) {
-    api.versionsFrom('1.3.5.1');
-    api.use('check');
-    api.use('ecmascript');
-    api.use('mongo');
-    api.use('underscore');
-    api.mainModule('logger.js');
-});
+
+/**
+ * The logs collection
+ * @type {Mongo.Collection}
+ */
+export const Logs = new Mongo.Collection('jalik-logs');
+export default Logs;

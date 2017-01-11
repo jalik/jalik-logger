@@ -1,31 +1,65 @@
-/**
- * Logger utility
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2017 Karl STEIN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
-Logger = {
+
+import {_} from 'meteor/underscore';
+import {check} from 'meteor/check';
+import {Meteor} from 'meteor/meteor';
+import {Config} from './logger-config';
+import {Logs} from './logger-collection';
+
+
+export const Logger = {
 
     /**
      * Logger configuration
-     * @type {Logger.Config}
+     * @type {Config}
      */
-    config: null,
+    config: new Config(),
 
     /**
-     * Debug message
+     * Logger collection
+     * @type {Mongo.Collection}
+     */
+    logs: Logs,
+
+    /**
+     * Debug type
      */
     DEBUG: 'debug',
 
     /**
-     * Error message
+     * Error type
      */
     ERROR: 'error',
 
     /**
-     * Information message
+     * Information type
      */
     INFO: 'info',
 
     /**
-     * Warning message
+     * Warning type
      */
     WARNING: 'warning',
 
@@ -33,39 +67,41 @@ Logger = {
      * Logs a debug message
      * @param message
      * @param context
+     * @param userId
      * @return {*}
      */
-    debug: function (message, context) {
-        return this.log(message, Logger.DEBUG, context);
+    debug(message, context, userId) {
+        return this.log(message, this.DEBUG, context, userId);
     },
 
     /**
-     * Logs an error
-     * @param message
-     * @param err
+     * Logs an error message
+     * @param error
+     * @param context
+     * @param userId
      * @return {*}
      */
-    error: function (message, err) {
-        if (message) {
-            if (typeof message === 'string') {
-                return this.log(message, Logger.ERROR, err);
+    error(error, context, userId) {
+        context = _.extend({}, context);
 
-            } else if (typeof message === 'object') {
-                if (message.message) {
-                    return this.log(message.message, Logger.ERROR, message.stack || message.stacktrace);
-                }
-            }
+        if (typeof error === 'string') {
+            return this.log(error, this.ERROR, context, userId);
+        }
+        else if (error instanceof Error) {
+            context.stack = error.stack;
+            return this.log(error.message, this.ERROR, context, userId);
         }
     },
 
     /**
-     * Logs an information
+     * Logs an information message
      * @param message
      * @param context
+     * @param userId
      * @return {*}
      */
-    info: function (message, context) {
-        return this.log(message, Logger.INFO, context);
+    info(message, context, userId) {
+        return this.log(message, this.INFO, context, userId);
     },
 
     /**
@@ -73,60 +109,97 @@ Logger = {
      * @param message
      * @param type
      * @param context
-     * @return {any}
+     * @param userId
+     * @return {*}
      */
-    log: function (message, type, context) {
-        check(message, String);
-        //check(type, String);
+    log(message, type, context, userId) {
+        if (typeof message !== 'string') {
+            throw new TypeError('Logger.log() message is not a String');
+        }
+        if (type && typeof type !== 'string') {
+            throw new TypeError('Logger.log() type is not a String');
+        }
+        if (context && typeof context !== 'object') {
+            throw new TypeError('Logger.log() context is not an Object');
+        }
+        if (userId && typeof userId !== 'string') {
+            throw new TypeError('Logger.log() userId is not a String');
+        }
 
-        var config = this.config;
+        const config = this.config;
 
-        if (console && (config.display === true || config.display[type] === true)) {
-            switch (type) {
-                case this.DEBUG:
-                    console.log(message);
-                    break;
+        // Display message in the console
+        if (typeof console === 'object' && console) {
+            if (config.display === true || config.display[type] === true) {
+                let args = [message];
 
-                case this.ERROR:
-                    console.error(message, context);
-                    break;
+                // Display context in the console
+                if (config.displayContext === true) {
+                    args.push(context);
+                }
 
-                case this.INFO:
-                    console.info(message);
-                    break;
+                switch (type) {
+                    case this.DEBUG:
+                        if (typeof console.debug !== 'function') {
+                            console.debug = console.log;
+                        }
+                        console.debug.apply(this, args);
+                        break;
 
-                case this.WARNING:
-                    console.warn(message);
-                    break;
+                    case this.ERROR:
+                        console.error.apply(this, args);
+                        break;
 
-                default:
-                    console.log(message);
+                    case this.INFO:
+                        console.info.apply(this, args);
+                        break;
+
+                    case this.WARNING:
+                        console.warn.apply(this, args);
+                        break;
+
+                    default:
+                        console.log.apply(this, args);
+                }
             }
         }
 
+        // Save message in database
         if (config.save === true || config.save[type] === true) {
-            return Logger.logs.insert({
+            return Logs.insert({
                 createdAt: new Date(),
                 message: message,
                 type: type,
-                context: context
+                context: context,
+                userId: userId
             });
         }
     },
 
     /**
-     * Logs a warning
+     * Logs a warning message
      * @param message
      * @param context
+     * @param userId
      * @return {*}
      */
-    warn: function (message, context) {
-        return this.log(message, Logger.WARNING, context);
+    warn(message, context, userId) {
+        return this.log(message, this.WARNING, context, userId);
     }
 };
 
-/**
- * Logs collection
- * @type {Mongo.Collection}
- */
-Logger.logs = new Mongo.Collection('jalik-logs');
+export const LoggerConfig = Config;
+export default Logger;
+
+if (Meteor.isServer) {
+    // Expose the module globally
+    if (typeof global !== 'undefined') {
+        global['Logger'] = Logger;
+    }
+}
+else if (Meteor.isClient) {
+    // Expose the module globally
+    if (typeof window !== 'undefined') {
+        window.Logger = Logger;
+    }
+}

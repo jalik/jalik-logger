@@ -22,28 +22,17 @@
  * SOFTWARE.
  */
 
-Package.describe({
-    name: "jalik:logger",
-    version: "0.2.0",
-    author: "karl.stein.pro@gmail.com",
-    summary: "Logger utility for Meteor",
-    homepage: "https://github.com/jalik/jalik-logger",
-    git: "https://github.com/jalik/jalik-logger.git",
-    documentation: "README.md"
-});
+import {Meteor} from 'meteor/meteor';
+import {Logger} from 'meteor/jalik:logger';
+import {LoggerConfig} from 'meteor/jalik:logger';
+import {chai} from 'meteor/practicalmeteor:chai';
 
-Package.onUse(function (api) {
-    api.versionsFrom("1.3.5.1");
-    api.use("check");
-    api.use("ecmascript");
-    api.use("mongo");
-    api.use("underscore");
-    api.mainModule("logger.js");
-});
 
-Package.onTest(function (api) {
-    api.use("ecmascript");
-    api.use("practicalmeteor:mocha");
-    api.use("jalik:logger");
-    api.mainModule("logger-tests.js");
+describe('Logger', function () {
+
+    describe(`new Logger()`, function () {
+        it(`should have a default configuration`, function () {
+            chai.assert.equal(Logger.config instanceof LoggerConfig, true);
+        });
+    });
 });
